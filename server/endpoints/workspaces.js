@@ -2,8 +2,7 @@ const { reqBody, multiUserMode, userFromSession } = require("../utils/http");
 const { Workspace } = require("../models/workspace");
 const { Document } = require("../models/documents");
 const { DocumentVectors } = require("../models/vectors");
-const { WorkspaceChats } = require("../models/workspaceChats");
-const { convertToChatHistory } = require("../utils/chats");
+const { ThreadChats } = require("../models/threadChats");;
 const { getVectorDbClass } = require("../utils/helpers");
 const { setupMulter } = require("../utils/files/multer");
 const {
@@ -14,6 +13,7 @@ const {
 const { validatedRequest } = require("../utils/middleware/validatedRequest");
 const { Telemetry } = require("../models/telemetry");
 const { flexUserRoleValid } = require("../utils/middleware/multiUserProtected");
+const { Threads} = require("../models/threads");
 const { handleUploads } = setupMulter();
 
 function workspaceEndpoints(app) {
@@ -27,6 +27,7 @@ function workspaceEndpoints(app) {
         const user = await userFromSession(request, response);
         const { name = null, onboardingComplete = false } = reqBody(request);
         const { workspace, message } = await Workspace.new(name, user?.id);
+
         await Telemetry.sendTelemetry(
           "workspace_created",
           {
@@ -195,7 +196,8 @@ function workspaceEndpoints(app) {
           return;
         }
 
-        await WorkspaceChats.delete({ workspaceId: Number(workspace.id) });
+        await ThreadChats.delete({ workspace_id: Number(workspace.id) });
+        await Threads.delete({ workspace_id: Number(workspace.id) })
         await DocumentVectors.deleteForWorkspace(workspace.id);
         await Document.delete({ workspaceId: Number(workspace.id) });
         await Workspace.delete({ id: Number(workspace.id) });
@@ -217,8 +219,8 @@ function workspaceEndpoints(app) {
     try {
       const user = await userFromSession(request, response);
       const workspaces = multiUserMode(response)
-        ? await Workspace.whereWithUser(user)
-        : await Workspace.where();
+        ? await Workspace.whereWithUser({user})
+        : await Workspace.where({});
 
       response.status(200).json({ workspaces });
     } catch (e) {
@@ -241,34 +243,6 @@ function workspaceEndpoints(app) {
       response.sendStatus(500).end();
     }
   });
-
-  app.get(
-    "/workspace/:slug/chats",
-    [validatedRequest],
-    async (request, response) => {
-      try {
-        const { slug } = request.params;
-        const user = await userFromSession(request, response);
-        const workspace = multiUserMode(response)
-          ? await Workspace.getWithUser(user, { slug })
-          : await Workspace.get({ slug });
-
-        if (!workspace) {
-          response.sendStatus(400).end();
-          return;
-        }
-
-        const history = multiUserMode(response)
-          ? await WorkspaceChats.forWorkspaceByUser(workspace.id, user.id)
-          : await WorkspaceChats.forWorkspace(workspace.id);
-
-        response.status(200).json({ history: convertToChatHistory(history) });
-      } catch (e) {
-        console.log(e.message, e);
-        response.sendStatus(500).end();
-      }
-    }
-  );
 }
 
 module.exports = { workspaceEndpoints };

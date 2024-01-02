@@ -1,20 +1,24 @@
 const prisma = require("../utils/prisma");
 
-const WorkspaceChats = {
-  new: async function ({ workspaceId, prompt, response = {}, user = null }) {
+const Threads = {
+  writable: [
+    // Used for generic updates so we can validate keys in request body
+    "name",
+  ],
+
+  new: async function ({ workspaceId, userId, name}, prismaInstance = prisma) {
     try {
-      const chat = await prisma.workspace_chats.create({
+      const thread = await prismaInstance.threads.create({
         data: {
-          workspaceId,
-          prompt,
-          response: JSON.stringify(response),
-          user_id: user?.id || null,
+          user_id: userId,
+          workspace_id: workspaceId,
+          name: name || "New thread"
         },
       });
-      return { chat, message: null };
+      return { thread, message: null };
     } catch (error) {
       console.error(error.message);
-      return { chat: null, message: error.message };
+      return { thread: null, message: error.message };
     }
   },
 
@@ -24,72 +28,31 @@ const WorkspaceChats = {
     limit = null,
     orderBy = null
   ) {
-    if (!workspaceId || !userId) return [];
-    try {
-      const chats = await prisma.workspace_chats.findMany({
-        where: {
-          workspaceId,
-          user_id: userId,
-          include: true,
-        },
-        ...(limit !== null ? { take: limit } : {}),
-        ...(orderBy !== null ? { orderBy } : { orderBy: { id: "asc" } }),
-      });
-      return chats;
-    } catch (error) {
-      console.error(error.message);
-      return [];
-    }
-  },
-
-  forWorkspace: async function (
-    workspaceId = null,
-    limit = null,
-    orderBy = null
-  ) {
     if (!workspaceId) return [];
     try {
-      const chats = await prisma.workspace_chats.findMany({
+      const threads = await prisma.threads.findMany({
         where: {
-          workspaceId,
-          include: true,
+          workspace_id: workspaceId,
+          ...(userId !== null ? { user_id: userId } : {})
         },
         ...(limit !== null ? { take: limit } : {}),
         ...(orderBy !== null ? { orderBy } : { orderBy: { id: "asc" } }),
       });
-      return chats;
+      return threads;
     } catch (error) {
       console.error(error.message);
       return [];
-    }
-  },
-
-  markHistoryInvalid: async function (workspaceId = null, user = null) {
-    if (!workspaceId) return;
-    try {
-      await prisma.workspace_chats.updateMany({
-        where: {
-          workspaceId,
-          user_id: user?.id,
-        },
-        data: {
-          include: false,
-        },
-      });
-      return;
-    } catch (error) {
-      console.error(error.message);
     }
   },
 
   get: async function (clause = {}, limit = null, orderBy = null) {
     try {
-      const chat = await prisma.workspace_chats.findFirst({
+      const thread = await prisma.threads.findFirst({
         where: clause,
         ...(limit !== null ? { take: limit } : {}),
         ...(orderBy !== null ? { orderBy } : {}),
       });
-      return chat || null;
+      return thread || null;
     } catch (error) {
       console.error(error.message);
       return null;
@@ -98,7 +61,7 @@ const WorkspaceChats = {
 
   delete: async function (clause = {}) {
     try {
-      await prisma.workspace_chats.deleteMany({
+      await prisma.threads.deleteMany({
         where: clause,
       });
       return true;
@@ -115,13 +78,13 @@ const WorkspaceChats = {
     offset = null
   ) {
     try {
-      const chats = await prisma.workspace_chats.findMany({
+      const threads = await prisma.threads.findMany({
         where: clause,
         ...(limit !== null ? { take: limit } : {}),
         ...(offset !== null ? { skip: offset } : {}),
         ...(orderBy !== null ? { orderBy } : {}),
       });
-      return chats;
+      return threads;
     } catch (error) {
       console.error(error.message);
       return [];
@@ -130,7 +93,7 @@ const WorkspaceChats = {
 
   count: async function (clause = {}) {
     try {
-      const count = await prisma.workspace_chats.count({
+      const count = await prisma.threads.count({
         where: clause,
       });
       return count;
@@ -149,11 +112,12 @@ const WorkspaceChats = {
     const { Workspace } = require("./workspace");
     const { User } = require("./user");
 
+    // add validate thread
     try {
       const results = await this.where(clause, limit, orderBy, offset);
 
       for (const res of results) {
-        const workspace = await Workspace.get({ id: res.workspaceId });
+        const workspace = await Workspace.get({ id: res.workspace_id });
         res.workspace = workspace
           ? { name: workspace.name, slug: workspace.slug }
           : { name: "deleted workspace", slug: null };
@@ -170,6 +134,34 @@ const WorkspaceChats = {
       return [];
     }
   },
+
+  update: async function (id = null, data = {}) {
+    if (!id) throw new Error("No thread id provided for update");
+
+    const validData = Object.keys(data).filter((key) =>
+      this.writable.includes(key)
+    ).reduce((obj, key) => {
+      if (!obj)
+        obj = {};
+      obj[key] = data[key];
+      return obj;
+    }, {});
+
+    if (Object.keys(validData).length === 0) {
+      return {thread: {id}, message: "No valid fields to update!"};
+    }
+
+    try {
+      const thread = await prisma.threads.update({
+        where: {id},
+        data: validData,
+      });
+      return {thread, message: null};
+    } catch (error) {
+      console.error(error.message);
+      return {thread: null, message: error.message};
+    }
+  },
 };
 
-module.exports = { WorkspaceChats };
+module.exports = { Threads };
