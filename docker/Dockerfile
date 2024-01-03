@@ -79,6 +79,7 @@ RUN cd /app/collector && yarn install --production && yarn cache clean
 
 # Setup the environment
 ENV NODE_ENV=production
+ENV ANYTHING_LLM_RUNTIME=docker
 
 # Expose the server port
 EXPOSE 3001
