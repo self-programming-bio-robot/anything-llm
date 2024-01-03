@@ -6,8 +6,7 @@ export default function handleChat(
   remHistory,
   _chatHistory
 ) {
-  const { uuid, textResponse, type, sources = [], error, close } = chatResult;
-
+  const { uuid, id, textResponse, type, sources = [], error, close } = chatResult;
   if (type === "abort") {
     setLoadingResponse(false);
     setChatHistory([
@@ -39,6 +38,8 @@ export default function handleChat(
       ...remHistory,
       {
         uuid,
+        id,
+        rating: 0,
         content: textResponse,
         role: "assistant",
         sources,
@@ -50,6 +51,8 @@ export default function handleChat(
     ]);
     _chatHistory.push({
       uuid,
+      id,
+      rating: 0,
       content: textResponse,
       role: "assistant",
       sources,
@@ -64,6 +67,7 @@ export default function handleChat(
       const existingHistory = { ..._chatHistory[chatIdx] };
       const updatedHistory = {
         ...existingHistory,
+        id,
         content: existingHistory.content + textResponse,
         sources,
         error,
@@ -74,6 +78,7 @@ export default function handleChat(
       _chatHistory[chatIdx] = updatedHistory;
     } else {
       _chatHistory.push({
+        id,
         uuid,
         sources,
         error,

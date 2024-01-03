@@ -65,7 +65,7 @@ function chatEndpoints(app) {
 
               if (currentChatCount >= systemLimit) {
                 writeResponseChunk(response, {
-                  id: uuidv4(),
+                  uuid: uuidv4(),
                   type: "abort",
                   textResponse: null,
                   sources: [],
@@ -89,7 +89,7 @@ function chatEndpoints(app) {
       } catch (e) {
         console.error(e);
         writeResponseChunk(response, {
-          id: uuidv4(),
+          uuid: uuidv4(),
           type: "abort",
           textResponse: null,
           sources: [],
@@ -214,6 +214,49 @@ function chatEndpoints(app) {
         const history = await ThreadChats.forWorkspaceByThread(workspace.id, thread.id);
 
         response.status(200).json({history: convertToChatHistory(history)});
+      } catch (e) {
+        console.log(e.message, e);
+        response.sendStatus(500).end();
+      }
+    }
+  );
+
+  app.post(
+    "/workspace/:slug/thread/:threadId/chats/:chatId/rate",
+    [validatedRequest],
+    async (request, response) => {
+      try {
+        const {slug, threadId, chatId} = request.params;
+        const {rating} = reqBody(request);
+
+        const user = await userFromSession(request, response);
+        const workspace = multiUserMode(response)
+          ? await Workspace.getWithUser(user, {slug})
+          : await Workspace.get({slug});
+
+        if (!workspace) {
+          response.sendStatus(400).end();
+          return;
+        }
+
+        const thread = await Threads.get({
+          id: Number(threadId),
+          workspace_id: workspace.id,
+          user_id: user?.id
+        });
+
+        if (!thread) {
+          response.sendStatus(400).end();
+          return;
+        }
+        const result = await ThreadChats.rate({
+          userId: user?.id,
+          threadId: thread.id,
+          chatId: Number(chatId),
+          rating: Number(rating),
+        });
+
+        response.status(200).json(result);
       } catch (e) {
         console.log(e.message, e);
         response.sendStatus(500).end();

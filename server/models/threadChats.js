@@ -2,7 +2,9 @@ const prisma = require("../utils/prisma");
 const {Threads} = require("./threads");
 
 const ThreadChats = {
-  new: async function ({ workspaceId, threadId, prompt, response = {}}) {
+  writable: ["prompt", "response", "include", "rating"],
+
+  new: async function ({workspaceId, threadId, prompt, response = {}}) {
     try {
       const chat = await prisma.thread_chats.create({
         data: {
@@ -12,10 +14,10 @@ const ThreadChats = {
           response: JSON.stringify(response),
         },
       });
-      return { chat, message: null };
+      return {chat, message: null};
     } catch (error) {
       console.error(error.message);
-      return { chat: null, message: error.message };
+      return {chat: null, message: error.message};
     }
   },
 
@@ -33,8 +35,8 @@ const ThreadChats = {
           thread_id: Number(threadId),
           include: true,
         },
-        ...(limit !== null ? { take: limit } : {}),
-        ...(orderBy !== null ? { orderBy } : { orderBy: { id: "asc" } }),
+        ...(limit !== null ? {take: limit} : {}),
+        ...(orderBy !== null ? {orderBy} : {orderBy: {id: "asc"}}),
       });
       return chats;
     } catch (error) {
@@ -58,8 +60,8 @@ const ThreadChats = {
         include: {
           thread: true
         },
-        ...(limit !== null ? { take: limit } : {}),
-        ...(orderBy !== null ? { orderBy } : { orderBy: { id: "asc" } }),
+        ...(limit !== null ? {take: limit} : {}),
+        ...(orderBy !== null ? {orderBy} : {orderBy: {id: "asc"}}),
       });
       return chats;
     } catch (error) {
@@ -90,8 +92,8 @@ const ThreadChats = {
     try {
       const chat = await prisma.thread_chats.findFirst({
         where: clause,
-        ...(limit !== null ? { take: limit } : {}),
-        ...(orderBy !== null ? { orderBy } : {}),
+        ...(limit !== null ? {take: limit} : {}),
+        ...(orderBy !== null ? {orderBy} : {}),
       });
       return chat || null;
     } catch (error) {
@@ -121,9 +123,9 @@ const ThreadChats = {
     try {
       const chats = await prisma.thread_chats.findMany({
         where: clause,
-        ...(limit !== null ? { take: limit } : {}),
-        ...(offset !== null ? { skip: offset } : {}),
-        ...(orderBy !== null ? { orderBy } : {}),
+        ...(limit !== null ? {take: limit} : {}),
+        ...(offset !== null ? {skip: offset} : {}),
+        ...(orderBy !== null ? {orderBy} : {}),
       });
       return chats;
     } catch (error) {
@@ -150,29 +152,29 @@ const ThreadChats = {
     offset = null,
     orderBy = null
   ) {
-    const { Workspace } = require("./workspace");
-    const { Threads } = require("./threads");
-    const { User } = require("./user");
+    const {Workspace} = require("./workspace");
+    const {Threads} = require("./threads");
+    const {User} = require("./user");
 
     // add validate thread
     try {
       const results = await this.where(clause, limit, orderBy, offset);
 
       for (const res of results) {
-        const workspace = await Workspace.get({ id: res.workspace_id });
+        const workspace = await Workspace.get({id: res.workspace_id});
         res.workspace = workspace
-          ? { name: workspace.name, slug: workspace.slug }
-          : { name: "deleted workspace", slug: null };
+          ? {name: workspace.name, slug: workspace.slug}
+          : {name: "deleted workspace", slug: null};
 
-        const thread = await Threads.get({ id: res.thread_id });
+        const thread = await Threads.get({id: res.thread_id});
         res.thread = thread
-          ? { name: thread.name }
-          : { username: "deleted thread" };
+          ? {name: thread.name}
+          : {username: "deleted thread"};
 
-        const user = thread.user_id ? await User.get({ id: thread.user_id }) : null;
+        const user = thread.user_id ? await User.get({id: thread.user_id}) : null;
         res.user = user
-          ? { username: user.username }
-          : { username: "Unknown user" };
+          ? {username: user.username}
+          : {username: "Unknown user"};
       }
 
       return results;
@@ -181,6 +183,57 @@ const ThreadChats = {
       return [];
     }
   },
+
+  rate: async function ({userId, threadId, chatId, rating = 0}) {
+    const clampRating = rating > 0 ? 1 : rating < 0 ? -1 : 0;
+    try {
+      const result = await prisma.thread_chats.update({
+        where: {
+          id: chatId,
+          thread_id: threadId,
+          thread: {
+            user_id: userId,
+          }
+        },
+        data: {
+          rating: clampRating,
+        }
+      });
+      return {chat: result, message: null };
+    } catch (error) {
+      console.error(error.message);
+      return { chat: null, message: error.message };
+    }
+  },
+  update: async function (id = null, data = {}) {
+    if (!id) throw new Error("No thread chat id provided for update");
+
+    const validData = Object.keys(data).filter((key) =>
+      this.writable.includes(key)
+    ).reduce((obj, key) => {
+      if (!obj)
+        obj = {};
+      obj[key] = data[key];
+      return obj;
+    }, {});
+
+    if (Object.keys(validData).length === 0) {
+      return {thread: {id}, message: "No valid fields to update!"};
+    }
+
+    if (validData['response']) validData['response'] = JSON.stringify(validData['response']);
+
+    try {
+      const chat = await prisma.thread_chats.update({
+        where: {id},
+        data: validData,
+      });
+      return {chat, message: null};
+    } catch (error) {
+      console.error(error.message);
+      return {chat: null, message: error.message};
+    }
+  },
 };
 
-module.exports = { ThreadChats };
+module.exports = {ThreadChats};

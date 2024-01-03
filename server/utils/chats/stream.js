@@ -35,7 +35,7 @@ async function streamChatWithWorkspace(
   const { safe, reasons = [] } = await LLMConnector.isSafe(message);
   if (!safe) {
     writeResponseChunk(response, {
-      id: uuid,
+      uuid,
       type: "abort",
       textResponse: null,
       sources: [],
@@ -106,6 +106,13 @@ async function streamChatWithWorkspace(
     rawHistory
   );
 
+
+  const {chat} = await ThreadChats.new({
+    workspaceId: workspace.id,
+    threadId: thread.id,
+    prompt: message,
+    response: { text: "", sources, type: chatMode },
+  });
   // If streaming is not explicitly enabled for connector
   // we do regular waiting of a response and send a single chunk.
   if (LLMConnector.streamingEnabled() !== true) {
@@ -116,6 +123,7 @@ async function streamChatWithWorkspace(
       temperature: workspace?.openAiTemp ?? 0.7,
     });
     writeResponseChunk(response, {
+      id: chat?.id.
       uuid,
       sources,
       type: "textResponseChunk",
@@ -128,16 +136,15 @@ async function streamChatWithWorkspace(
       temperature: workspace?.openAiTemp ?? 0.7,
     });
     completeText = await handleStreamResponses(response, stream, {
+      id: chat?.id,
       uuid,
       sources,
     });
   }
 
-  await ThreadChats.new({
-    workspaceId: workspace.id,
-    threadId: thread.id,
+  await ThreadChats.update(chat?.id, {
     prompt: message,
-    response: { text: completeText, sources, type: chatMode },
+    response: { text: completeText, sources: [], type: "chat" },
   });
   return;
 }
@@ -158,6 +165,13 @@ async function streamEmptyEmbeddingChat({
     messageLimit
   );
 
+  const {chat} = await ThreadChats.new({
+    workspaceId: workspace.id,
+    threadId: thread.id,
+    prompt: message,
+    response: { text: "", sources: [], type: "chat" },
+  });
+
   // If streaming is not explicitly enabled for connector
   // we do regular waiting of a response and send a single chunk.
   if (LLMConnector.streamingEnabled() !== true) {
@@ -171,6 +185,7 @@ async function streamEmptyEmbeddingChat({
       rawHistory
     );
     writeResponseChunk(response, {
+      id: chat?.id,
       uuid,
       type: "textResponseChunk",
       textResponse: completeText,
@@ -186,14 +201,13 @@ async function streamEmptyEmbeddingChat({
       rawHistory
     );
     completeText = await handleStreamResponses(response, stream, {
+      id: chat?.id,
       uuid,
       sources: [],
     });
   }
 
-  await ThreadChats.new({
-    workspaceId: workspace.id,
-    threadId: thread.id,
+  await ThreadChats.update(chat?.id, {
     prompt: message,
     response: { text: completeText, sources: [], type: "chat" },
   });
@@ -202,7 +216,7 @@ async function streamEmptyEmbeddingChat({
 
 // TODO: Refactor this implementation
 function handleStreamResponses(response, stream, responseProps) {
-  const { uuid = uuidv4(), sources = [] } = responseProps;
+  const { id, uuid = uuidv4(), sources = [] } = responseProps;
 
   // Gemini likes to return a stream asyncIterator which will
   // be a totally different object than other models.
@@ -222,6 +236,7 @@ function handleStreamResponses(response, stream, responseProps) {
       }
 
       writeResponseChunk(response, {
+        id,
         uuid,
         sources,
         type: "textResponseChunk",
@@ -252,6 +267,7 @@ function handleStreamResponses(response, stream, responseProps) {
       }
 
       writeResponseChunk(response, {
+        id,
         uuid,
         sources,
         type: "textResponseChunk",
@@ -302,6 +318,7 @@ function handleStreamResponses(response, stream, responseProps) {
 
         if (message == "[DONE]") {
           writeResponseChunk(response, {
+            id,
             uuid,
             sources,
             type: "textResponseChunk",
@@ -335,6 +352,7 @@ function handleStreamResponses(response, stream, responseProps) {
 
           if (finishReason !== null) {
             writeResponseChunk(response, {
+              id,
               uuid,
               sources,
               type: "textResponseChunk",

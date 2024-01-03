@@ -97,12 +97,13 @@ model workspaces {
 model thread_chats {
   id              Int      @id @default(autoincrement())
   workspace_id    Int
-  thread_id       Int   
+  thread_id       Int
   prompt          String
   response        String
   include         Boolean  @default(true)
   created_at      DateTime @default(now())
   last_updated_at DateTime @default(now())
+  rating          Int      @default(0)
   thread          threads  @relation(fields: [thread_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 

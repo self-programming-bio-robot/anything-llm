@@ -107,6 +107,8 @@ export default function ChatHistory({ history = [], workspace, thread }) {
           <HistoricalMessage
             key={index}
             ref={isLastMessage ? replyRef : null}
+            id={props.id}
+            rating={props.rating}
             message={props.content}
             role={props.role}
             workspace={workspace}

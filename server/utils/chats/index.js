@@ -7,7 +7,7 @@ const { getVectorDbClass, getLLMProvider } = require("../helpers");
 function convertToChatHistory(history = []) {
   const formattedHistory = [];
   history.forEach((history) => {
-    const { prompt, response, created_at } = history;
+    const { id, rating, prompt, response, created_at } = history;
     const data = JSON.parse(response);
     formattedHistory.push([
       {
@@ -16,6 +16,8 @@ function convertToChatHistory(history = []) {
         sentAt: moment(created_at).unix(),
       },
       {
+        id,
+        rating,
         role: "assistant",
         content: data.text,
         sources: data.sources || [],
@@ -77,7 +79,7 @@ async function chatWithWorkspace(
   const { safe, reasons = [] } = await LLMConnector.isSafe(message);
   if (!safe) {
     return {
-      id: uuid,
+      uuid,
       type: "abort",
       textResponse: null,
       sources: [],
@@ -123,7 +125,7 @@ async function chatWithWorkspace(
   // Failed similarity search.
   if (!!error) {
     return {
-      id: uuid,
+      uuid,
       type: "abort",
       textResponse: null,
       sources: [],
@@ -151,7 +153,7 @@ async function chatWithWorkspace(
 
   if (!textResponse) {
     return {
-      id: uuid,
+      uuid,
       type: "abort",
       textResponse: null,
       sources: [],
@@ -160,7 +162,7 @@ async function chatWithWorkspace(
     };
   }
 
-  await ThreadChats.new({
+  const {chat} = await ThreadChats.new({
     workspaceId: workspace.id,
     threadId: thread.id,
     prompt: message,
@@ -168,7 +170,8 @@ async function chatWithWorkspace(
     user,
   });
   return {
-    id: uuid,
+    id: chat.id,
+    uuid,
     type: "textResponse",
     close: true,
     textResponse,
@@ -216,14 +219,15 @@ async function emptyEmbeddingChat({
     workspace,
     rawHistory
   );
-  await ThreadChats.new({
+  const {chat} = await ThreadChats.new({
     workspaceId: workspace.id,
     threadId: thread.id,
     prompt: message,
     response: { text: textResponse, sources: [], type: "chat" },
   });
   return {
-    id: uuid,
+    uuid,
+    id: chat.id,
     type: "textResponse",
     sources: [],
     close: true,

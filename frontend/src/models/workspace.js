@@ -215,6 +215,21 @@ const Workspace = {
 
     return chatResult;
   },
+  rateAnswer: async function(workspaceSlug, ThreadId, chatId, rating) {
+    const chatResult = await fetch(`${API_BASE}/workspace/${workspaceSlug}/thread/${ThreadId}/chats/${chatId}/rate`, {
+      method: "POST",
+      body: JSON.stringify({ rating }),
+      headers: baseHeaders(),
+    })
+      .then((res) => res.json())
+      .then((res) => res.chat)
+      .catch((e) => {
+        console.error(e);
+        return null;
+      });
+
+    return chatResult;
+  }
 };
 
 export default Workspace;
