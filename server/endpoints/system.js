@@ -767,9 +767,9 @@ function systemEndpoints(app) {
     [validatedRequest, flexUserRoleValid],
     async (request, response) => {
       try {
-        const { offset = 0, limit = 20 } = reqBody(request);
+        const { offset = 0, limit = 20, filters = {} } = reqBody(request);
         const chats = await ThreadChats.whereWithData(
-          {},
+          filters,
           limit,
           offset * limit,
           { id: "desc" }
@@ -800,12 +800,13 @@ function systemEndpoints(app) {
     }
   );
 
-  app.get(
+  app.post(
     "/system/export-chats",
     [validatedRequest, flexUserRoleValid],
-    async (_request, response) => {
+    async (request, response) => {
       try {
-        const chats = await ThreadChats.where({}, null, { id: "asc" }, null);
+        const { filters = {} } = reqBody(request);
+        const chats = await ThreadChats.where(filters, null, { id: "asc" }, null);
         const workspaceIds = [
           ...new Set(chats.map((chat) => chat.workspace_id)),
         ];

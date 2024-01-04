@@ -46,7 +46,7 @@ export default function ChatRow({ chat }) {
         >
           {truncate(JSON.parse(chat.response)?.text, 40)}
         </td>
-        <td className="px-6 py-4">{chat.createdAt}</td>
+        <td className="px-6 py-4">{chat.created_at}</td>
         <td className="px-6 py-4 flex items-center gap-x-6">
           <button
             onClick={handleDelete}

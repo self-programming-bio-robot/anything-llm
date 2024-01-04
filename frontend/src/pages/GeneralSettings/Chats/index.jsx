@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import {useCallback, useEffect, useState} from "react";
 import Sidebar, { SidebarMobileHeader } from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
 import * as Skeleton from "react-loading-skeleton";
@@ -10,8 +10,10 @@ import System from "@/models/system";
 
 const PAGE_SIZE = 20;
 export default function WorkspaceChats() {
+  const [filters, setFilters] = useState({});
+
   const handleDumpChats = async () => {
-    const chats = await System.exportChats();
+    const chats = await System.exportChats(filters);
     if (chats) {
       const blob = new Blob([chats], { type: "application/jsonl" });
       const link = document.createElement("a");
@@ -29,6 +31,28 @@ export default function WorkspaceChats() {
       showToast("Failed to export chats.", "error");
     }
   };
+
+  const onChangeFilter = useCallback((event) => {
+    setFilters((prev) => {
+      let newValue = {}
+      switch (event.target.id) {
+        case "rating": {
+          if (event.target.value) {
+            newValue = {
+              rating: Number(event.target.value),
+            }
+          } else {
+            delete prev.rating;
+          }
+          break;
+        }
+      }
+      return {
+        ...prev,
+        ...newValue
+      };
+    });
+  }, []);
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-sidebar flex">
@@ -55,15 +79,31 @@ export default function WorkspaceChats() {
               These are all the recorded chats and messages that have been sent
               by users ordered by their creation date.
             </p>
+            <p className="text-lg font-semibold text-white">
+              Filters:
+            </p>
+            <div className="flex flex-row items-center space-x-4">
+              <label htmlFor="rating" className="text-slate-200">Rating:</label>
+              <select id="rating"
+                      defaultValue=""
+                      onChange={onChangeFilter}
+                      className="border bg-transparent border-slate-200 px-4 py-1 rounded-lg text-slate-200
+                      text-sm items-center flex gap-x-2 hover:bg-slate-200 hover:text-slate-800">
+                <option value="">None</option>
+                <option value="1">Positive</option>
+                <option value="0">Neutral</option>
+                <option value="-1">Negative</option>
+              </select>
+            </div>
           </div>
-          <ChatsContainer />
+          <ChatsContainer filters={filters}/>
         </div>
       </div>
     </div>
   );
 }
 
-function ChatsContainer() {
+function ChatsContainer({filters}) {
   const query = useQuery();
   const [loading, setLoading] = useState(true);
   const [chats, setChats] = useState([]);
@@ -79,13 +119,13 @@ function ChatsContainer() {
 
   useEffect(() => {
     async function fetchChats() {
-      const { chats: _chats, hasPages = false } = await System.chats(offset);
+      const { chats: _chats, hasPages = false } = await System.chats(offset, filters);
       setChats(_chats);
       setCanNext(hasPages);
       setLoading(false);
     }
     fetchChats();
-  }, [offset]);
+  }, [offset, filters]);
 
   if (loading) {
     return (

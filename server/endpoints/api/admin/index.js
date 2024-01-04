@@ -495,13 +495,16 @@ function apiAdminEndpoints(app) {
     #swagger.tags = ['Admin']
     #swagger.description = 'All chats in the system ordered by most recent. Methods are disabled until multi user mode is enabled via the UI.'
     #swagger.requestBody = {
-        description: 'Page offset to show of workspace chats. All fields are optional and will not update unless specified.',
+        description: 'Page offset and filters to show of workspace chats. All fields are optional and will not update unless specified.',
         required: false,
-        type: 'integer',
+        type: 'object',
         content: {
           "application/json": {
             example: {
               offset: 2,
+              filters: {
+                "rating": 1,
+              }
             }
           }
         }
@@ -527,9 +530,9 @@ function apiAdminEndpoints(app) {
     */
       try {
         const pgSize = 20;
-        const { offset = 0 } = reqBody(request);
+        const { offset = 0, filters = {} } = reqBody(request);
         const chats = await ThreadChats.whereWithData(
-          {},
+          filters,
           pgSize,
           offset * pgSize,
           { id: "desc" }

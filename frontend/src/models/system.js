@@ -398,11 +398,11 @@ const System = {
         return { models: [], error: e.message };
       });
   },
-  chats: async (offset = 0) => {
+  chats: async (offset = 0, filters = {}) => {
     return await fetch(`${API_BASE}/system/workspace-chats`, {
       method: "POST",
       headers: baseHeaders(),
-      body: JSON.stringify({ offset }),
+      body: JSON.stringify({ offset, filters }),
     })
       .then((res) => res.json())
       .catch((e) => {
@@ -421,10 +421,11 @@ const System = {
         return { success: false, error: e.message };
       });
   },
-  exportChats: async () => {
+  exportChats: async (filters) => {
     return await fetch(`${API_BASE}/system/export-chats`, {
-      method: "GET",
+      method: "POST",
       headers: baseHeaders(),
+      body: JSON.stringify({ filters }),
     })
       .then((res) => res.text())
       .catch((e) => {
