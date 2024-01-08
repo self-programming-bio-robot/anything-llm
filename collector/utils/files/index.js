@@ -53,6 +53,17 @@ function writeToServerDocuments(
 // force remove them.
 async function wipeCollectorStorage() {
   const cleanHotDir = new Promise((resolve) => {
+    if (process.env.NODE_ENV !== "development") {
+      const dir = path.resolve(process.env.STORAGE_DIR, `collector/hotdir`);
+      console.log("Creating hotdir directory if it doesn't exist.");
+      fs.mkdirSync(dir, { recursive: true });
+      console.log(`Copy placeholder file to hotdir(${dir}) directory.`);
+      fs.copyFileSync(
+        path.resolve(__dirname, "../../hotdir/__HOTDIR__.md"),
+        path.resolve(dir, "__HOTDIR__.md")
+      );
+    }
+
     const directory = process.env.NODE_ENV === "development"
       ? path.resolve(__dirname, "../../hotdir")
       : path.resolve(process.env.STORAGE_DIR, `collector/hotdir`);
