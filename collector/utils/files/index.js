@@ -32,10 +32,11 @@ function writeToServerDocuments(
 ) {
   const destination = destinationOverride
     ? path.resolve(destinationOverride)
-    : path.resolve(
-        __dirname,
-        "../../../server/storage/documents/custom-documents"
-      );
+    : (
+      process.env.NODE_ENV === "development"
+        ? path.resolve(__dirname, "../../../server/storage/documents/custom-documents")
+        : path.resolve(process.env.STORAGE_DIR, `documents/custom-documents`)
+    );
   if (!fs.existsSync(destination))
     fs.mkdirSync(destination, { recursive: true });
   const destinationFilePath = path.resolve(destination, filename);
