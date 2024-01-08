@@ -1,4 +1,8 @@
-const WATCH_DIRECTORY = require("path").resolve(__dirname, "../hotdir");
+const path = require("path");
+
+const WATCH_DIRECTORY = process.env.NODE_ENV === "development"
+  ? path.resolve(__dirname, "../hotdir")
+  : path.resolve(process.env.STORAGE_DIR, `collector/hotdir`);
 
 const ACCEPTED_MIMES = {
   "text/plain": [".txt", ".md"],

@@ -53,7 +53,10 @@ function writeToServerDocuments(
 // force remove them.
 async function wipeCollectorStorage() {
   const cleanHotDir = new Promise((resolve) => {
-    const directory = path.resolve(__dirname, "../../hotdir");
+    const directory = process.env.NODE_ENV === "development"
+      ? path.resolve(__dirname, "../../hotdir")
+      : path.resolve(process.env.STORAGE_DIR, `collector/hotdir`);
+
     fs.readdir(directory, (err, files) => {
       if (err) resolve();
 
