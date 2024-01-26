@@ -16,10 +16,12 @@ import System from "@/models/system";
 import Jazzicon from "../UserIcon";
 import { userFromStorage } from "@/utils/request";
 import { AI_BACKGROUND_COLOR, USER_BACKGROUND_COLOR } from "@/utils/constants";
+import LoadingChat from "@/components/ThreadChat/LoadingChat/index.jsx";
 
 export default function DefaultChatContainer() {
   const [mockMsgs, setMockMessages] = useState([]);
   const [fetchedMessages, setFetchedMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const {
     showing: showingNewWsModal,
     showModal: showNewWsModal,
@@ -29,8 +31,10 @@ export default function DefaultChatContainer() {
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       const fetchedMessages = await System.getWelcomeMessages();
       setFetchedMessages(fetchedMessages);
+      setIsLoading(false);
     };
     fetchData();
   }, []);
@@ -325,8 +329,10 @@ export default function DefaultChatContainer() {
       window.localStorage.setItem("anythingllm_intro", 1);
     }
 
-    processMsgs();
-  }, []);
+    if (!isLoading && fetchedMessages.length === 0) {
+      processMsgs();
+    }
+  }, [isLoading, fetchedMessages]);
 
   return (
     <div
@@ -334,7 +340,10 @@ export default function DefaultChatContainer() {
       className="transition-all duration-500 relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[26px] bg-main-gradient w-full h-full overflow-y-scroll border-4 border-accent"
     >
       {isMobile && <SidebarMobileHeader />}
-      {fetchedMessages.length === 0
+      {isLoading ? (
+          <LoadingChat />
+        )
+        : fetchedMessages.length === 0
         ? mockMsgs.map((content, i) => {
             return <React.Fragment key={i}>{content}</React.Fragment>;
           })
