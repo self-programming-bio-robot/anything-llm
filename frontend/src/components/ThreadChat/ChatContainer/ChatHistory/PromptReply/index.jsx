@@ -6,7 +6,7 @@ import Citations from "../Citation";
 
 const PromptReply = forwardRef(
   (
-    { uuid, reply, pending, error, workspace, thread, sources = [], closed = true },
+    { uuid, reply, pending, error, workspace, thread, user, sources = [], closed = true },
     ref
   ) => {
     const assistantBackgroundColor = "bg-historical-msg-system";
@@ -76,7 +76,11 @@ const PromptReply = forwardRef(
               dangerouslySetInnerHTML={{ __html: renderMarkdown(reply) }}
             />
           </div>
-          <Citations sources={sources} />
+          {
+            (!user || user?.role !== "default") && (
+              <Citations sources={sources} />
+            )
+          }
         </div>
       </div>
     );

@@ -10,7 +10,7 @@ import ChatRating from "../Rating";
 
 const HistoricalMessage = forwardRef(
   (
-    {uuid = v4(), id, message, rating, role, workspace, thread, sources = [], error = false},
+    {uuid = v4(), id, message, rating, role, workspace, thread, user, sources = [], error = false},
     ref
   ) => {
     return (
@@ -53,7 +53,7 @@ const HistoricalMessage = forwardRef(
               />
             )}
           </div>
-          {role === "assistant" && <Citations sources={sources}/>}
+          {role === "assistant" && (!user || user?.role !== "default") && <Citations sources={sources}/>}
           {role === "assistant" && id &&
             <ChatRating workspace={workspace} thread={thread} id={id} initialRating={rating}/>}
         </div>

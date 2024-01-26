@@ -5,12 +5,14 @@ import { useManageWorkspaceModal } from "../../../Modals/MangeWorkspace";
 import ManageWorkspace from "../../../Modals/MangeWorkspace";
 import { ArrowDown } from "@phosphor-icons/react";
 import debounce from "lodash.debounce";
+import useUser from "@/hooks/useUser.js";
 
 export default function ChatHistory({ history = [], workspace, thread }) {
   const replyRef = useRef(null);
   const { showing, showModal, hideModal } = useManageWorkspaceModal();
   const [isAtBottom, setIsAtBottom] = useState(true);
   const chatHistoryRef = useRef(null);
+  const { user } = useUser();
 
   useEffect(() => {
     scrollToBottom();
@@ -48,20 +50,13 @@ export default function ChatHistory({ history = [], workspace, thread }) {
   if (history.length === 0) {
     return (
       <div className="flex flex-col h-full md:mt-0 pb-48 w-full justify-end items-center">
-        <div className="flex flex-col items-start">
-          <p className="text-white/60 text-lg font-base -ml-6 py-4">
+        <div className="flex flex-col text-center">
+          <p className="text-white/60 text-lg font-base py-4">
             Welcome to your new workspace.
           </p>
           <div className="w-full text-center">
             <p className="text-white/60 text-lg font-base inline-flex items-center gap-x-2">
-              To get started either{" "}
-              <span
-                className="underline font-medium cursor-pointer"
-                onClick={showModal}
-              >
-                upload a document
-              </span>
-              or <b className="font-medium italic">send a chat.</b>
+              To get started, please send a chat message.
             </p>
           </div>
         </div>
@@ -97,6 +92,7 @@ export default function ChatHistory({ history = [], workspace, thread }) {
               sources={props.sources}
               error={props.error}
               workspace={workspace}
+              user={user}
               thread={thread}
               closed={props.closed}
             />
@@ -113,6 +109,7 @@ export default function ChatHistory({ history = [], workspace, thread }) {
             role={props.role}
             workspace={workspace}
             thread={thread}
+            user={user}
             sources={props.sources}
             error={props.error}
           />
