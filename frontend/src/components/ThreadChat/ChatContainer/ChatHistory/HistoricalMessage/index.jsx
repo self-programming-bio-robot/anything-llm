@@ -45,7 +45,10 @@ const HistoricalMessage = forwardRef(
               </span>
             ) : (
               <span
-                className={`whitespace-pre-line text-white font-normal text-sm md:text-sm flex flex-col gap-y-1 mt-2`}
+                className={`prose prose-invert
+                  prose-headings:mb-1 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-h4:text-lg
+                  prose-p:mt-0 prose-ul:mt-0 prose-ol:mt-0
+                  text-white font-normal text-sm md:text-sm flex flex-col gap-y-2 mt-2 [&>li]:p-10`}
                 dangerouslySetInnerHTML={{__html: renderMarkdown(message)}}
               />
             )}

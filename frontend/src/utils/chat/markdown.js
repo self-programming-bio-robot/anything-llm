@@ -3,6 +3,7 @@ import markdownIt from "markdown-it";
 import hljs from "highlight.js";
 import "highlight.js/styles/github-dark-dimmed.min.css";
 import { v4 } from "uuid";
+import headerSections from 'markdown-it-header-sections';
 
 const markdown = markdownIt({
   html: true,
@@ -25,7 +26,7 @@ const markdown = markdownIt({
       "</pre></div>"
     );
   },
-});
+}).use(headerSections);
 
 window.copySnippet = function (uuid = "") {
   const target = document.getElementById(`code-${uuid}`);
